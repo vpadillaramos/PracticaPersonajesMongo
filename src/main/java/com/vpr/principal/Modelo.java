@@ -7,6 +7,7 @@ import static com.mongodb.client.model.Filters.eq;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
@@ -44,11 +45,11 @@ public class Modelo {
 		db = mongoClient.getDatabase(Constantes.DB);
 	}
 
-	@Override
+	/*@Override
 	protected void finalize() throws Throwable {
 		super.finalize();
 		desconectar();
-	}
+	}*/
 	
 	public void desconectar() {
 		mongoClient.close();
@@ -72,8 +73,16 @@ public class Modelo {
 	}
 	
 	public void guardar(Personaje personaje) {
-		MongoCollection<Personaje> coleccionPersonajes = db.getCollection("personajes", Personaje.class);
-		coleccionPersonajes.insertOne(personaje);
+		Document documento = new Document();
+		documento.append("nombre", personaje.getNombre());
+		documento.append("vida", personaje.getVida());
+		documento.append("ataque", personaje.getAtaque());
+		documento.append("defensa", personaje.getDefensa());
+		documento.append("armasId", personaje.getArmasId());
+		
+		db.getCollection("personajes").insertOne(documento);
+		ObjectId id = (ObjectId) documento.get("_id");
+		personaje.setId(id); // le pongo la id asignada en la db para luego poder ponersela a sus armas
 	}
 	
 	public void guardar(Arma arma) {
@@ -89,13 +98,15 @@ public class Modelo {
 	public void modificar(Arma arma) {
 		MongoCollection<Arma> coleccionArmas = db.getCollection("armas", Arma.class);
 		coleccionArmas.replaceOne(eq("_id", arma.getId()), arma);
-		System.out.println("modificada");
 	}
 	
 	public void borrar(Personaje personaje) {
 		// Borro el personajeId de toda las armas que tenga el personaje
-		for(ObjectId armaId : personaje.getArmasId()) 
-			getArma(armaId).setPersonajeId(null);
+		for(ObjectId armaId : personaje.getArmasId()) {
+			Arma arma = getArma(armaId);
+			arma.setPersonajeId(null);
+			modificar(arma);
+		}
 		
 		personaje.getArmasId().clear(); // se pierden todas las armas
 		personajeBorrado = personaje.clone();
@@ -106,8 +117,11 @@ public class Modelo {
 	
 	public void borrar(Arma arma) {
 		// Borro el armaId que tiene el personaje de este arma
-		if(arma.getPersonajeId() != null)
-			getPersonaje(arma.getPersonajeId()).borrarArma(arma.getId());
+		if(arma.getPersonajeId() != null) {
+			Personaje personaje = getPersonaje(arma.getPersonajeId());
+			personaje.borrarArma(arma.getId());
+			modificar(personaje);
+		}
 		arma.setPersonajeId(null); // una vez se borra un arma pierde la relacion con el personaje
 		armaBorrada = arma.clone();
 		

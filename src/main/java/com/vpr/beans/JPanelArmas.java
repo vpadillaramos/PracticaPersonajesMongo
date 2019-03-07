@@ -16,6 +16,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import com.vpr.base.Arma;
+import com.vpr.base.Personaje;
 import com.vpr.principal.Modelo;
 import com.vpr.ui.Vista;
 import com.vpr.util.Util;
@@ -286,8 +287,10 @@ public class JPanelArmas extends JPanel implements ActionListener, ListSelection
 		armaActual = listArmas.getSelectedValue();
 		rellenarCampos();
 		Modelo modelo = new Modelo();
-		if(armaActual.getPersonajeId() != null)
-			Vista.estado.setMensajeInformativo(armaActual.informacionCompleta() + ". Pertenezco a " + modelo.getPersonaje(armaActual.getPersonajeId()).getNombre());
+		if(armaActual.getPersonajeId() != null) {
+			Personaje personaje = modelo.getPersonaje(armaActual.getPersonajeId());
+			Vista.estado.setMensajeInformativo(armaActual.informacionCompleta() + ". Pertenezco a " + personaje.getNombre());
+		}
 		else
 			Vista.estado.setMensajeInformativo(armaActual.informacionCompleta());
 	}

@@ -139,19 +139,19 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		
 		switch(JBotonesCrud.Accion.valueOf(e.getActionCommand())) {
 		case NUEVO:
-			nuevoPokemon();
+			nuevo();
 			break;
 		case MODIFICAR:
-			modificarPokemon();
+			modificar();
 			break;
 		case GUARDAR:
-			guardarPokemon();
+			guardar();
 			break;
 		case CANCELAR:
 			cancelar();
 			break;
 		case BORRAR:
-			borrarPokemon();
+			borrar();
 			break;
 		default:
 			
@@ -218,7 +218,7 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 	public void refrescar() {
 		Modelo modelo = new Modelo();
 		
-		//Ordeno los pokemon alfabeticamente
+		//Ordeno los personajes alfabeticamente
 		List<Personaje> aux = modelo.getPersonajes();
 		aux.sort(Comparator.comparing(Personaje::getNombre));
 		panelBusqueda.refrescar(aux);
@@ -307,21 +307,21 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		Modelo modelo = new Modelo();
 		if(modelo.deshacerPersonaje()) {
 			refrescar();
-			Util.mensajeInformacion("Hecho", "Pokemon recuperado");
+			Util.mensajeInformacion("Hecho", "Personaje recuperado");
 		}
 		else
 			Util.mensajeInformacion("Deshacer", "Nada que deshacer");
 	}
 	
 	
-	private void nuevoPokemon() {
+	private void nuevo() {
 		limpiar();
 		modoEdicion(true);
 		tfNombre.requestFocus();
 		accion = Accion.NUEVO;
 	}
 	
-	private void modificarPokemon() {
+	private void modificar() {
 		rellenarCampos();
 		tfNombre.selectAll();
 		tfNombre.requestFocus();
@@ -335,7 +335,7 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		modoEdicion(false);
 	}
 	
-	private void borrarPokemon() {
+	private void borrar() {
 		Modelo modelo = new Modelo();
 		Personaje personaje = null;
 		personaje = (Personaje) panelBusqueda.getSeleccionado();
@@ -351,7 +351,7 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		Vista.estado.setMensajeInformativo("Personajes totales: " + modelo.getNumeroPersonajes());
 	}
 	
-	private void guardarPokemon() {
+	private void guardar() {
 		Modelo modelo = new Modelo();
 		
 		//************Verificacion de datos****************
@@ -410,8 +410,6 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		List<ObjectId> armasId = new ArrayList<>();
 		for(Arma arma : panelAnadirArma.getListaArmas()) {
 			armasId.add(arma.getId());
-			arma.setPersonajeId(personaje.getId()); // al arma le pongo el id del personaje
-			modelo.modificar(arma);
 		}
 		
 		personaje.setArmasId(armasId);
@@ -422,9 +420,16 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		}
 		else {
 			modelo.guardar(personaje);
+			
 			Util.mensajeInformacion("Hecho", "Personaje guardado");
 		}
-		
+
+		// Le pongo a sus armas su id
+		for(Arma arma : panelAnadirArma.getListaArmas()) {
+			arma.setPersonajeId(personaje.getId()); // al arma le pongo el id del personaje
+			modelo.modificar(arma);
+		}
+
 		refrescar();
 		limpiar();
 		modoEdicion(false);

@@ -124,10 +124,10 @@ public class JPanelAnadirArma extends JPanel implements ActionListener{
 		case "-":
 			if(lista.getSelectedIndex() == -1)
 				return;
-			/*Modelo modelo = new Modelo();
+			Modelo modelo = new Modelo();
 			Arma arma = lista.getSelectedValue();
-			arma.setPokemon(null);
-			modelo.modificarArma(arma);*/
+			arma.setPersonajeId(null);
+			modelo.modificar(arma);
 			cbArmas.addItem((Arma) modelLista.remove(lista.getSelectedIndex()));
 			
 			break;

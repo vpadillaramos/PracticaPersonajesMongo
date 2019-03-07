@@ -78,6 +78,7 @@ public class Personaje {
 
 
 	public void setArmasId(List<ObjectId> armasId) {
+		this.armasId.clear();
 		this.armasId.addAll(armasId);
 	}
 	

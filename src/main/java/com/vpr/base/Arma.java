@@ -8,7 +8,7 @@ public class Arma {
 	private String nombre;
 	private int fuerza;
 	private int duracion;
-	private ObjectId personajeId;
+	private ObjectId personajeId = null;
 	
 	
 	// Constructor
