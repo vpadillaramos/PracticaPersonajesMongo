@@ -12,12 +12,12 @@ public class Personaje {
 	private int vida;
 	private int ataque;
 	private int defensa;
-	private List<Arma> armas;
+	private List<ObjectId> armasId;
 	
 	
 	// Constructor
 	public Personaje() {
-		armas = new ArrayList<>();
+		armasId = new ArrayList<>();
 	}
 
 
@@ -47,8 +47,8 @@ public class Personaje {
 	}
 
 
-	public List<Arma> getArmas() {
-		return armas;
+	public List<ObjectId> getArmasId() {
+		return armasId;
 	}
 
 
@@ -77,8 +77,12 @@ public class Personaje {
 	}
 
 
-	public void setArmas(List<Arma> armas) {
-		this.armas.addAll(armas);
+	public void setArmasId(List<ObjectId> armasId) {
+		this.armasId.addAll(armasId);
+	}
+	
+	public void borrarArma(ObjectId armaId) {
+		armasId.remove(armaId);
 	}
 	
 	public Personaje clone() {
@@ -87,7 +91,7 @@ public class Personaje {
 		p.setVida(this.vida);
 		p.setAtaque(this.ataque);
 		p.setDefensa(this.defensa);
-		p.setArmas(this.armas);
+		p.setArmasId(this.armasId);
 		
 		return p;
 	}
@@ -95,6 +99,10 @@ public class Personaje {
 	@Override
 	public String toString() {
 		return nombre;
+	}
+	
+	public String informacionCompleta() {
+		return "Nombre: " + nombre + ", vida: " + vida + ", ataque: " + ataque + ", defensa: " + defensa;
 	}
 	
 }

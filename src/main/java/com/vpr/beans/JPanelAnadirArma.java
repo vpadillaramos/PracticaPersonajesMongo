@@ -102,7 +102,7 @@ public class JPanelAnadirArma extends JPanel implements ActionListener{
 		Modelo modelo = new Modelo();
 		modelLista.removeAllElements();
 		
-		List<Arma> aux = modelo.getArmas();
+		List<Arma> aux = modelo.getArmasLibres();
 		aux.sort(Comparator.comparing(Arma::getNombre));
 		cbArmas.refrescar(aux);
 	}

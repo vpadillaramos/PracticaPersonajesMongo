@@ -20,8 +20,13 @@ public class JEstado extends JPanel {
 
 	}
 
-	public void setMensajeConfirmacion(String mensaje) {
+	public void setMensajeInformativo(String mensaje) {
 		lbEstado.setForeground(Color.BLACK);
+		lbEstado.setText(mensaje);
+	}
+	
+	public void setMensajeConsejo(String mensaje) {
+		lbEstado.setForeground(Color.GREEN);
 		lbEstado.setText(mensaje);
 	}
 	

@@ -18,7 +18,7 @@ import com.vpr.beans.JPanelPersonaje;
 
 public class Vista extends JFrame {
 	public JPanel panel;
-	public JEstado estado;
+	public static JEstado estado;
 	public JTabbedPane tabbedPane;
 	public JPanelArmas panelArmas;
 	public JPanelPersonaje panelPersonaje;
@@ -35,7 +35,7 @@ public class Vista extends JFrame {
 		panel.setLayout(new BorderLayout(0, 0));
 		
 		estado = new JEstado();
-		estado.setMensajeConfirmacion("Personajes MongoDB 1.0");
+		estado.setMensajeInformativo("Personajes MongoDB 1.0");
 		getContentPane().add(estado, BorderLayout.SOUTH);
 		
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
@@ -47,7 +47,6 @@ public class Vista extends JFrame {
 		tabbedPane.addTab("Personaje", null, panelPersonaje, null);
 		
 		panelArmas = new JPanelArmas();
-		panelArmas.btBorrarTodo.setLocation(328, 346);
 		tabbedPane.addTab("Arma", null, panelArmas, null);
 		
 		setResizable(false);
@@ -58,8 +57,14 @@ public class Vista extends JFrame {
 
 			@Override
 			public void stateChanged(ChangeEvent e) {
-				if(tabbedPane.getSelectedIndex() == 0)
+				if(tabbedPane.getSelectedIndex() == 0) {
 					panelPersonaje.refrescar();
+				}
+				else if(tabbedPane.getSelectedIndex() == 1){
+					panelArmas.refrescar();
+				}
+				else
+					estado.setMensajeInformativo("Bienvenido");
 			}
 			
 		});
@@ -70,14 +75,13 @@ public class Vista extends JFrame {
 	//Metodos
 	public void hacerVisible(boolean b) {
 		setVisible(b);
-		
 	}
 	
 	public void refrescar() {
-		panelPersonaje.iniciar();
-		panelPersonaje.refrescar();
 		panelArmas.iniciar();
 		panelArmas.refrescar();
+		panelPersonaje.iniciar();
+		panelPersonaje.refrescar();
 	}
 }
 

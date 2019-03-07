@@ -1,38 +1,34 @@
 package com.vpr.beans;
 
-import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.UIManager;
-import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import org.bson.types.ObjectId;
+
 import com.vpr.base.Arma;
 import com.vpr.base.Personaje;
 import com.vpr.principal.Modelo;
+import com.vpr.ui.Vista;
 import com.vpr.util.Util;
 
-public class JPanelPersonaje extends JPanel implements ActionListener, ListSelectionListener, MouseListener, DocumentListener {
+public class JPanelPersonaje extends JPanel implements ActionListener, ListSelectionListener, MouseListener, FocusListener, DocumentListener {
 	public JBotonesCrud botonesCrud;
 	public JLabel lblNombre;
 	public JLabel lblAtaque;
@@ -47,13 +43,14 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 	
 	//Atributos
 	private enum Accion {
-		NUEVO, MODIFICAR, DESHACER
+		NUEVO, MODIFICAR, DESHACER, BUSCAR
 	}
 	private Accion accion;
 	private Personaje personajeActual;
 	private byte[] imagen;
 	public JButton btDeshacer;
 	public JTextField tfVida;
+	public JButton btBuscar;
 	
 
 	public JPanelPersonaje() {
@@ -99,7 +96,7 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		
 		btDeshacer = new JButton("Deshacer borrado");
 		btDeshacer.setActionCommand("DESHACER");
-		btDeshacer.setBounds(353, 224, 151, 23);
+		btDeshacer.setBounds(353, 266, 151, 23);
 		add(btDeshacer);
 		
 		panelBusqueda = new JPanelBusqueda();
@@ -118,6 +115,11 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		tfVida.setBounds(101, 57, 104, 20);
 		add(tfVida);
 		tfVida.setColumns(10);
+		
+		btBuscar = new JButton("Buscar");
+		btBuscar.setActionCommand("BUSCAR");
+		btBuscar.setBounds(387, 232, 89, 23);
+		add(btBuscar);
 	}
 
 	
@@ -127,6 +129,11 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		
 		if(e.getSource() == btDeshacer) {
 			deshacer();
+			return;
+		}
+		
+		if(e.getSource() == btBuscar) {
+			buscar();
 			return;
 		}
 		
@@ -159,6 +166,7 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 			return;
 		personajeActual = (Personaje) panelBusqueda.lista.getSelectedValue();
 		rellenarCampos();
+		Vista.estado.setMensajeInformativo(personajeActual.informacionCompleta());
 	}
 	
 	@Override
@@ -201,7 +209,10 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		botonesCrud.addListeners(this);
 		btDeshacer.addActionListener(this);
 		panelBusqueda.lista.addListSelectionListener(this);
+		btBuscar.addActionListener(this);
+		panelBusqueda.tfBuscar.addFocusListener(this);
 		panelBusqueda.tfBuscar.getDocument().addDocumentListener(this);
+		
 	}
 	
 	public void refrescar() {
@@ -212,6 +223,7 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		aux.sort(Comparator.comparing(Personaje::getNombre));
 		panelBusqueda.refrescar(aux);
 		panelAnadirArma.refrescar();
+		estadoTotalPersonajes();
 	}
 	
 	private void limpiar() {
@@ -263,19 +275,34 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		tfDefensa.setText(String.valueOf(personajeActual.getDefensa()));
 		
 		//Muestro las armas en la lista
-		panelAnadirArma.anadirArmas(personajeActual.getArmas());
-		
-		//Quito las armas que ya tiene
-		panelAnadirArma.cbArmas.refrescar(new Modelo().getArmas()); //TODO ordenar esta lista
-		for(Arma arma : personajeActual.getArmas()) {
-			panelAnadirArma.cbArmas.removeItem(arma);
-		}
+		Modelo modelo = new Modelo();
+		panelAnadirArma.anadirArmas(modelo.getArmas(personajeActual.getArmasId()));
 		
 		botonesCrud.btModificar.setEnabled(true);
 		botonesCrud.btBorrar.setEnabled(true);
 	}
 	
-	// TODO
+	private void buscar() {
+		if(panelBusqueda.tfBuscar.getText().trim().equals(""))
+			return;
+		
+		Modelo modelo = new Modelo();
+		String busqueda = panelBusqueda.tfBuscar.getText().trim();
+		String[] parametros = busqueda.split(" ");
+		
+		if(parametros.length > 2)
+			return;
+		
+		if(parametros.length == 2 && !modelo.isInt(parametros[1])) {
+			Vista.estado.setMensajeError("El segundo parámetro debe ser un entero");
+			panelBusqueda.tfBuscar.requestFocus();
+			return;
+		}
+		
+		panelBusqueda.refrescar(modelo.buscarPersonajes(parametros));
+		
+	}
+	
 	private void deshacer() {
 		Modelo modelo = new Modelo();
 		if(modelo.deshacerPersonaje()) {
@@ -286,16 +313,6 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 			Util.mensajeInformacion("Deshacer", "Nada que deshacer");
 	}
 	
-	// TODO
-	private void borrarTodo() {
-		Modelo modelo = new Modelo();
-		
-		if(!Util.mensajeConfirmacion("¡ATENCIÓN!", "¿Quieres borrar todos los pokemon?"))
-			return;
-		//modelo.borrarTodoPokemon();
-		refrescar();
-		Util.mensajeInformacion("Hecho", "Todos los pokemon han sido borrados correctamente");
-	}
 	
 	private void nuevoPokemon() {
 		limpiar();
@@ -327,6 +344,11 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		refrescar();
 		limpiar();
 		modoEdicion(false);
+	}
+	
+	private void estadoTotalPersonajes() {
+		Modelo modelo = new Modelo();
+		Vista.estado.setMensajeInformativo("Personajes totales: " + modelo.getNumeroPersonajes());
 	}
 	
 	private void guardarPokemon() {
@@ -383,7 +405,16 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 		personaje.setVida(Integer.parseInt(tfVida.getText().trim()));
 		personaje.setAtaque(Integer.parseInt(tfAtaque.getText().trim()));
 		personaje.setDefensa(Integer.parseInt(tfDefensa.getText().trim()));
-		personaje.setArmas(panelAnadirArma.getListaArmas());
+		
+		// Guardo las id de las armas
+		List<ObjectId> armasId = new ArrayList<>();
+		for(Arma arma : panelAnadirArma.getListaArmas()) {
+			armasId.add(arma.getId());
+			arma.setPersonajeId(personaje.getId()); // al arma le pongo el id del personaje
+			modelo.modificar(arma);
+		}
+		
+		personaje.setArmasId(armasId);
 
 		if(accion == Accion.MODIFICAR) {
 			Util.mensajeInformacion("Hecho", "Personaje modificada");
@@ -401,23 +432,28 @@ public class JPanelPersonaje extends JPanel implements ActionListener, ListSelec
 
 
 	@Override
+	public void focusGained(FocusEvent e) {
+		Vista.estado.setMensajeConsejo("Puedes buscar por nombre o por nombre y vida");
+	}
+
+
+	@Override
+	public void focusLost(FocusEvent e) {
+		estadoTotalPersonajes();
+	}
+
+
+	@Override
 	public void insertUpdate(DocumentEvent e) {
-		String cadena = panelBusqueda.tfBuscar.getText().toLowerCase();
 		
-		for(Personaje p : getListaPersonajes()) {
-			if(!p.getNombre().toLowerCase().contains(cadena)) 
-				panelBusqueda.modelo.removeElement(p);
-		}
 	}
 
 
 	@Override
 	public void removeUpdate(DocumentEvent e) {
-		String cadena = panelBusqueda.tfBuscar.getText().toLowerCase();
-		Modelo modelo = new Modelo();
-		for(Personaje p : modelo.getPersonajes()) {
-			if(!panelBusqueda.modelo.contains(p) && p.getNombre().toLowerCase().contains(cadena))
-				panelBusqueda.modelo.addElement(p);
+		if(panelBusqueda.tfBuscar.getText().equals("")) {
+			Modelo modelo = new Modelo();
+			panelBusqueda.refrescar(modelo.getPersonajes());
 		}
 	}
 

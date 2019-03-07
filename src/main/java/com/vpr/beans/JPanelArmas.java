@@ -17,6 +17,7 @@ import javax.swing.event.ListSelectionListener;
 
 import com.vpr.base.Arma;
 import com.vpr.principal.Modelo;
+import com.vpr.ui.Vista;
 import com.vpr.util.Util;
 
 public class JPanelArmas extends JPanel implements ActionListener, ListSelectionListener {
@@ -36,7 +37,6 @@ public class JPanelArmas extends JPanel implements ActionListener, ListSelection
 	}
 	private Accion accion;
 	private Arma armaActual;
-	public JButton btBorrarTodo;
 	public JButton btDeshacer;
 
 	public JPanelArmas() {
@@ -83,10 +83,6 @@ public class JPanelArmas extends JPanel implements ActionListener, ListSelection
 		listArmas.setModel(modelArma);
 		scrollPane.setViewportView(listArmas);
 		
-		btBorrarTodo = new JButton("Borrar todo");
-		btBorrarTodo.setBounds(328, 266, 102, 23);
-		add(btBorrarTodo);
-		
 		btDeshacer = new JButton("Deshacer borrado");
 		btDeshacer.setActionCommand("DESHACER");
 		btDeshacer.addActionListener(new ActionListener() {
@@ -102,18 +98,12 @@ public class JPanelArmas extends JPanel implements ActionListener, ListSelection
 		//refrescarLista();
 		modoEdicion(false);
 		botonesCrud.addListeners(this);
-		btBorrarTodo.addActionListener(this);
 		btDeshacer.addActionListener(this);
 		listArmas.addListSelectionListener(this);
 	}
 	
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		
-		if(e.getSource() == btBorrarTodo) {
-			borrarTodo();
-			return;
-		}
 		
 		if(e.getSource() == btDeshacer) {
 			deshacer();
@@ -160,7 +150,6 @@ public class JPanelArmas extends JPanel implements ActionListener, ListSelection
 	public void modoEdicion(boolean b) {
 		if(b) {
 			botonesCrud.modoEdicion(b);
-			btBorrarTodo.setEnabled(!b);
 			btDeshacer.setEnabled(!b);
 			
 			tfNombre.setEditable(b);
@@ -169,7 +158,6 @@ public class JPanelArmas extends JPanel implements ActionListener, ListSelection
 		}
 		else {
 			botonesCrud.modoEdicion(b);
-			btBorrarTodo.setEnabled(!b);
 			btDeshacer.setEnabled(!b);
 			
 			tfNombre.setEditable(b);
@@ -188,7 +176,6 @@ public class JPanelArmas extends JPanel implements ActionListener, ListSelection
 		modoEdicion(false);
 	}
 	
-	// TODO
 	private void deshacer() {
 		Modelo modelo = new Modelo();
 		if(modelo.deshacerArma()) {
@@ -198,18 +185,6 @@ public class JPanelArmas extends JPanel implements ActionListener, ListSelection
 		else 
 			Util.mensajeInformacion("Deshacer", "Nada que deshacer");
 		
-	}
-	
-	// TODO
-	private void borrarTodo() {
-		/*Modelo modelo = new Modelo();
-		
-		if(!Util.mensajeConfirmacion("¡ATENCIÓN!", "¿Quieres borrar todas las armas?"))
-			return;
-		modelo.borrarTodoArma();
-		refrescarLista();*/
-		
-		Util.mensajeInformacion("Hecho", "Todas las armas han sido borradas correctamente");
 	}
 	
 	private void nuevaArma() {
@@ -269,7 +244,7 @@ public class JPanelArmas extends JPanel implements ActionListener, ListSelection
 		arma.setNombre(tfNombre.getText().trim());
 		arma.setFuerza(Integer.parseInt(tfFuerza.getText().trim()));
 		arma.setDuracion(Integer.parseInt(tfDuracion.getText().trim()));
-		
+		arma.setPersonajeId(null);
 		
 		if(accion == Accion.MODIFICAR) {
 			modelo.modificar(arma);
@@ -298,6 +273,8 @@ public class JPanelArmas extends JPanel implements ActionListener, ListSelection
 		aux.sort(Comparator.comparing(Arma::getNombre));
 		for(Arma a: aux)
 			modelArma.addElement(a);
+		
+		Vista.estado.setMensajeInformativo("Armas totales: " + modelo.getNumeroArmas());
 	}
 
 	@Override
@@ -308,6 +285,10 @@ public class JPanelArmas extends JPanel implements ActionListener, ListSelection
 		
 		armaActual = listArmas.getSelectedValue();
 		rellenarCampos();
-		
+		Modelo modelo = new Modelo();
+		if(armaActual.getPersonajeId() != null)
+			Vista.estado.setMensajeInformativo(armaActual.informacionCompleta() + ". Pertenezco a " + modelo.getPersonaje(armaActual.getPersonajeId()).getNombre());
+		else
+			Vista.estado.setMensajeInformativo(armaActual.informacionCompleta());
 	}
 }

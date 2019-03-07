@@ -8,6 +8,7 @@ public class Arma {
 	private String nombre;
 	private int fuerza;
 	private int duracion;
+	private ObjectId personajeId;
 	
 	
 	// Constructor
@@ -55,18 +56,45 @@ public class Arma {
 		this.duracion = duracion;
 	}
 	
+	public ObjectId getPersonajeId() {
+		return personajeId;
+	}
+	
+	public void setPersonajeId(ObjectId personajeId) {
+		this.personajeId = personajeId;
+	}
+	
 	public Arma clone() {
 		Arma a = new Arma();
 		a.setNombre(this.nombre);
 		a.setFuerza(this.fuerza);
 		a.setDuracion(this.duracion);
+		a.setPersonajeId(this.personajeId);
 		
 		return a;
 	}
 
 	@Override
+	public int hashCode() {
+		return nombre.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if(!(obj instanceof Arma))
+			return false;
+		Arma arma = (Arma) obj;
+		
+		return nombre.equals(arma.nombre);
+	}
+
+	@Override
 	public String toString() {
 		return nombre;
+	}
+	
+	public String informacionCompleta() {
+		return "Nombre: " + nombre + ", fuerza: " + fuerza + ", duración: " + duracion;
 	}
 	
 }

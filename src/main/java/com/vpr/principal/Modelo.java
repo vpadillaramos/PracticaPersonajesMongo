@@ -1,6 +1,7 @@
 package com.vpr.principal;
 
 
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 
 import java.util.ArrayList;
@@ -9,13 +10,16 @@ import java.util.List;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
+import org.bson.types.ObjectId;
 
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import com.vpr.base.Arma;
 import com.vpr.base.Personaje;
+import com.vpr.base.Usuario;
 import com.vpr.util.Constantes;
 
 public class Modelo {
@@ -50,6 +54,23 @@ public class Modelo {
 		mongoClient.close();
 	}
 	
+	public boolean iniciarSesion(Usuario usuario) {
+		MongoCollection<Usuario> coleccionUsuarios = db.getCollection("usuarios", Usuario.class);
+		return coleccionUsuarios.find().into(new ArrayList<Usuario>()).contains(usuario);
+	}
+	
+	public boolean registrarUsuario(Usuario usuario) {
+		MongoCollection<Usuario> coleccionUsuarios = db.getCollection("usuarios", Usuario.class);
+		List<Usuario> listaUsuarios = new ArrayList<>();
+		coleccionUsuarios.find().into(listaUsuarios);
+		
+		if(listaUsuarios.contains(usuario))
+			return false;
+		
+		coleccionUsuarios.insertOne(usuario);
+		return true;
+	}
+	
 	public void guardar(Personaje personaje) {
 		MongoCollection<Personaje> coleccionPersonajes = db.getCollection("personajes", Personaje.class);
 		coleccionPersonajes.insertOne(personaje);
@@ -68,16 +89,26 @@ public class Modelo {
 	public void modificar(Arma arma) {
 		MongoCollection<Arma> coleccionArmas = db.getCollection("armas", Arma.class);
 		coleccionArmas.replaceOne(eq("_id", arma.getId()), arma);
+		System.out.println("modificada");
 	}
 	
 	public void borrar(Personaje personaje) {
+		// Borro el personajeId de toda las armas que tenga el personaje
+		for(ObjectId armaId : personaje.getArmasId()) 
+			getArma(armaId).setPersonajeId(null);
+		
+		personaje.getArmasId().clear(); // se pierden todas las armas
 		personajeBorrado = personaje.clone();
-		personajeBorrado.getArmas().clear();
+		
 		MongoCollection<Personaje> coleccionPersonajes = db.getCollection("personajes", Personaje.class);
 		coleccionPersonajes.deleteOne(eq("_id", personaje.getId()));
 	}
 	
 	public void borrar(Arma arma) {
+		// Borro el armaId que tiene el personaje de este arma
+		if(arma.getPersonajeId() != null)
+			getPersonaje(arma.getPersonajeId()).borrarArma(arma.getId());
+		arma.setPersonajeId(null); // una vez se borra un arma pierde la relacion con el personaje
 		armaBorrada = arma.clone();
 		
 		MongoCollection<Arma> coleccionArmas = db.getCollection("armas", Arma.class);
@@ -86,13 +117,47 @@ public class Modelo {
 	
 	public List<Personaje> getPersonajes(){
 		MongoCollection<Personaje> coleccionPersonajes = db.getCollection("personajes", Personaje.class);
-		System.out.println("Tamaño: " + coleccionPersonajes.find().into(new ArrayList<Personaje>()).size());
 		return coleccionPersonajes.find().into(new ArrayList<Personaje>());
 	}
 	
-	public List<Arma> getArmas(){
+	public Personaje getPersonaje(ObjectId personajeId) {
+		MongoCollection<Personaje> coleccionPersonajes = db.getCollection("personajes", Personaje.class);
+		return coleccionPersonajes.find(eq("_id", personajeId)).first();
+	}
+	
+	public List<Arma> getArmas() {
 		MongoCollection<Arma> coleccionArmas = db.getCollection("armas", Arma.class);
 		return coleccionArmas.find().into(new ArrayList<Arma>());
+	}
+	
+	public Arma getArma(ObjectId armaId) {
+		MongoCollection<Arma> coleccionArmas = db.getCollection("armas", Arma.class);
+		return coleccionArmas.find(eq("_id", armaId)).first();
+	}
+	
+	public List<Arma> getArmas(List<ObjectId> armasId) {
+		MongoCollection<Arma> coleccionArmas = db.getCollection("armas", Arma.class);
+		List<Arma> listaArmas = new ArrayList<>();
+		// anado a la lista de armas segun su id
+		for(ObjectId id : armasId) 
+			listaArmas.add(coleccionArmas.find(eq("_id", id)).first());
+		return listaArmas;
+	}
+	
+	public List<Personaje> buscarPersonajes(String[] parametros){
+		MongoCollection<Personaje> coleccionPersonajes = db.getCollection("personajes", Personaje.class);
+		
+		if(parametros.length == 1) 
+			return coleccionPersonajes.find(eq("nombre", parametros[0])).into(new ArrayList<Personaje>());
+		else if(parametros.length == 2)
+			return coleccionPersonajes.find(and(eq("nombre", parametros[0]), eq("vida", Integer.parseInt(parametros[1])))).into(new ArrayList<Personaje>());
+		return new ArrayList<Personaje>();
+	}
+	
+	public List<Arma> getArmasLibres(){
+		MongoCollection<Arma> coleccionArmas = db.getCollection("armas", Arma.class);
+		// Compruebo que el campo personajeId no este en estas armas
+		return coleccionArmas.find(Filters.exists("personajeId", false)).into(new ArrayList<Arma>());
 	}
 	
 	public boolean deshacerPersonaje() {
@@ -112,6 +177,16 @@ public class Modelo {
 			return true;
 		}
 		return false;
+	}
+	
+	public long getNumeroPersonajes() {
+		MongoCollection<Personaje> coleccionPersonajes = db.getCollection("personajes", Personaje.class);
+		return coleccionPersonajes.countDocuments();
+	}
+	
+	public long getNumeroArmas() {
+		MongoCollection<Arma> coleccionArmas = db.getCollection("armas", Arma.class);
+		return coleccionArmas.countDocuments();
 	}
 	
 	/***
